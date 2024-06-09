@@ -15,6 +15,7 @@ import { getArea } from 'ol/sphere';
 import { boundingExtent } from 'ol/extent';
 import Feature from 'ol/Feature';
 import Geometry from 'ol/geom/Geometry';
+import {FullScreen, defaults as defaultControls} from 'ol/control.js';
 
 const MapComponent: React.FC = () => {
   const [map, setMap] = useState<Map | null>(null);
@@ -99,6 +100,7 @@ const MapComponent: React.FC = () => {
     });
 
     const mapInstance = new Map({
+      controls: defaultControls().extend([new FullScreen()]),
       target: 'map',
       layers: [
         new TileLayer({
@@ -107,11 +109,12 @@ const MapComponent: React.FC = () => {
         boundaryVectorLayer,
         farmlandVectorLayer,
       ],
+      
       view: new View({
-        center: fromLonLat([0, 0]),
+        center: fromLonLat([6.3792, 7.5244]),
         zoom: 6,
       }),
-      overlays: [popup],
+      overlays: [popup],      
     });
 
     const select = new Select({
@@ -157,7 +160,7 @@ const MapComponent: React.FC = () => {
             popup.setPosition(event.coordinate);
     
             const extent = boundingExtent(coordinates[0][0]);
-            mapInstance.getView().fit(extent, { duration: 1000, padding: [100, 100, 100, 100] });
+            mapInstance.getView().fit(extent, { duration: 1000, padding: [250, 250, 250, 250] });
         } else {
           popup.setPosition(undefined);
         }

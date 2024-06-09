@@ -48,7 +48,7 @@ const MyPage: React.FC = () => {
     <div>
       <div className="topnav">
         <a href="#default" className="logo">
-          FIF INTERACTIVE WEB APP
+          FIF INTERACTIVE GIS DATABASE OF FARMLANDS/INFRASTRUCTURES
         </a>
       </div>
 
