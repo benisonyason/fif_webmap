@@ -15,7 +15,7 @@ import { getArea } from 'ol/sphere';
 import { boundingExtent } from 'ol/extent';
 import Feature from 'ol/Feature';
 import Geometry from 'ol/geom/Geometry';
-import { FullScreen, defaults as defaultControls } from 'ol/control.js';
+import { FullScreen, defaults as defaultControls, ZoomToExtent } from 'ol/control.js';
 
 const MapComponent: React.FC = () => {
   const [map, setMap] = useState<Map | null>(null);
@@ -98,9 +98,22 @@ const MapComponent: React.FC = () => {
       stopEvent: false,
       offset: [0, -15],
     });
+    
+    // const DKIZoomExtent =  [1279289.317183882, 1148789.4635057684, 1290770.3990348745, 1156228.028917502],
+
+    const extent = [120870.33011448634, 526035.2936696329, 1754588.7855050964, 1630624.3212196166]; // Define the extent here
 
     const mapInstance = new Map({
-      controls: defaultControls().extend([new FullScreen()]),
+      controls: defaultControls().extend([
+        new FullScreen({
+          tipLabel: 'Full Screen Mode',
+        }),
+        new ZoomToExtent({
+          extent: extent,
+          label: 'E',
+          tipLabel: 'Zoom to Extent',
+        }),
+      ]),
       target: 'map',
       layers: [
         new TileLayer({
@@ -115,7 +128,6 @@ const MapComponent: React.FC = () => {
       }),
       overlays: [popup],
     });
-
     const select = new Select({
       condition: click,
       style: new Style({
@@ -132,6 +144,8 @@ const MapComponent: React.FC = () => {
     mapInstance.addInteraction(select);
 
     mapInstance.on('click', (event) => {
+      var coordinates = event.coordinate;
+      console.log('Clicked coordinates:', coordinates);
       const feature = mapInstance.forEachFeatureAtPixel(event.pixel, (feature: FeatureLike) => {
         return feature as Feature<Geometry>;
       });
