@@ -15,7 +15,7 @@ import { getArea } from 'ol/sphere';
 import { boundingExtent } from 'ol/extent';
 import Feature from 'ol/Feature';
 import Geometry from 'ol/geom/Geometry';
-import {FullScreen, defaults as defaultControls} from 'ol/control.js';
+import { FullScreen, defaults as defaultControls } from 'ol/control.js';
 
 const MapComponent: React.FC = () => {
   const [map, setMap] = useState<Map | null>(null);
@@ -58,7 +58,7 @@ const MapComponent: React.FC = () => {
     const boundaryVectorSource = new VectorSource();
     const boundaryVectorLayer = new VectorLayer({
       source: boundaryVectorSource,
-      style: (feature: Feature<Geometry>) => {
+      style: (feature: Feature<Geometry>): Style[] => {
         return [
           new Style({
             fill: new Fill({
@@ -109,12 +109,11 @@ const MapComponent: React.FC = () => {
         boundaryVectorLayer,
         farmlandVectorLayer,
       ],
-      
       view: new View({
         center: fromLonLat([6.3792, 7.5244]),
         zoom: 6,
       }),
-      overlays: [popup],      
+      overlays: [popup],
     });
 
     const select = new Select({
@@ -129,38 +128,41 @@ const MapComponent: React.FC = () => {
         }),
       }),
     });
-    
+
     mapInstance.addInteraction(select);
 
     mapInstance.on('click', (event) => {
-      const feature = mapInstance.forEachFeatureAtPixel(event.pixel, (feature: Feature<Geometry>) => {
-        return feature;
+      const feature = mapInstance.forEachFeatureAtPixel(event.pixel, (feature: FeatureLike) => {
+        return feature as Feature<Geometry>;
       });
 
-      if (feature && mapInstance.getLayers().getArray().includes(farmlandVectorLayer, boundaryVectorLayer)) {
-        if (feature.getGeometry().getType() === 'MultiPolygon') {
-            const coordinates = feature.getGeometry().getCoordinates();
-            const area = getArea(feature.getGeometry());
-            const hectares = (area / 10000).toFixed(2);
-            const properties = feature.getProperties();
-            
-            // Remove the geometry property
-            delete properties.geometry;
-            
-            // Create content by iterating over the properties
-            let content = '';
-            for (const [key, value] of Object.entries(properties)) {
-                content += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
-            }
-            
-            // Add the calculated area as well
-            content += `<p><strong>Size:</strong> ${hectares} hectares</p>`;
-            
-            popupContainer.current!.innerHTML = content;
+      if (feature && (mapInstance.getLayers().getArray().includes(farmlandVectorLayer) || mapInstance.getLayers().getArray().includes(boundaryVectorLayer))) {
+        const geometry = feature.getGeometry();
+        if (geometry && geometry.getType() === 'MultiPolygon') {
+          const coordinates = (geometry as any).getCoordinates();
+          const area = getArea(geometry);
+          const hectares = (area / 10000).toFixed(2);
+          const properties = feature.getProperties();
+
+          // Remove the geometry property
+          delete properties.geometry;
+
+          // Create content by iterating over the properties
+          let content = '';
+          for (const [key, value] of Object.entries(properties)) {
+            content += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
+          }
+
+          // Add the calculated area as well
+          content += `<p><strong>Size:</strong> ${hectares} hectares</p>`;
+
+          if (popupContainer.current) {
+            popupContainer.current.innerHTML = content;
             popup.setPosition(event.coordinate);
-    
-            const extent = boundingExtent(coordinates[0][0]);
-            mapInstance.getView().fit(extent, { duration: 1000, padding: [250, 250, 250, 250] });
+          }
+
+          const extent = boundingExtent(coordinates[0][0]);
+          mapInstance.getView().fit(extent, { duration: 1000, padding: [250, 250, 250, 250] });
         } else {
           popup.setPosition(undefined);
         }
