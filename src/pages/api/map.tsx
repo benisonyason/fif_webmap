@@ -15,6 +15,7 @@ import { getArea } from 'ol/sphere';
 import { boundingExtent } from 'ol/extent';
 import Feature from 'ol/Feature';
 import Geometry from 'ol/geom/Geometry';
+import { FullScreen, defaults as defaultControls, ZoomToExtent } from 'ol/control.js';
 
 const MapComponent: React.FC = () => {
   const [map, setMap] = useState<Map | null>(null);
@@ -57,7 +58,7 @@ const MapComponent: React.FC = () => {
     const boundaryVectorSource = new VectorSource();
     const boundaryVectorLayer = new VectorLayer({
       source: boundaryVectorSource,
-      style: (feature: Feature<Geometry>) => {
+      style: (feature: Feature<Geometry>): Style[] => {
         return [
           new Style({
             fill: new Fill({
@@ -97,8 +98,22 @@ const MapComponent: React.FC = () => {
       stopEvent: false,
       offset: [0, -15],
     });
+    
+    // const DKIZoomExtent =  [1279289.317183882, 1148789.4635057684, 1290770.3990348745, 1156228.028917502],
+
+    const extent = [120870.33011448634, 526035.2936696329, 1754588.7855050964, 1630624.3212196166]; // Define the extent here
 
     const mapInstance = new Map({
+      controls: defaultControls().extend([
+        new FullScreen({
+          tipLabel: 'Full Screen Mode',
+        }),
+        new ZoomToExtent({
+          extent: extent,
+          label: 'E',
+          tipLabel: 'Zoom to Extent',
+        }),
+      ]),
       target: 'map',
       layers: [
         new TileLayer({
@@ -108,12 +123,11 @@ const MapComponent: React.FC = () => {
         farmlandVectorLayer,
       ],
       view: new View({
-        center: fromLonLat([0, 0]),
+        center: fromLonLat([6.3792, 7.5244]),
         zoom: 6,
       }),
       overlays: [popup],
     });
-
     const select = new Select({
       condition: click,
       style: new Style({
@@ -126,38 +140,43 @@ const MapComponent: React.FC = () => {
         }),
       }),
     });
-    
+
     mapInstance.addInteraction(select);
 
     mapInstance.on('click', (event) => {
-      const feature = mapInstance.forEachFeatureAtPixel(event.pixel, (feature: Feature<Geometry>) => {
-        return feature;
+      var coordinates = event.coordinate;
+      console.log('Clicked coordinates:', coordinates);
+      const feature = mapInstance.forEachFeatureAtPixel(event.pixel, (feature: FeatureLike) => {
+        return feature as Feature<Geometry>;
       });
 
-      if (feature && mapInstance.getLayers().getArray().includes(farmlandVectorLayer, boundaryVectorLayer)) {
-        if (feature.getGeometry().getType() === 'MultiPolygon') {
-            const coordinates = feature.getGeometry().getCoordinates();
-            const area = getArea(feature.getGeometry());
-            const hectares = (area / 10000).toFixed(2);
-            const properties = feature.getProperties();
-            
-            // Remove the geometry property
-            delete properties.geometry;
-            
-            // Create content by iterating over the properties
-            let content = '';
-            for (const [key, value] of Object.entries(properties)) {
-                content += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
-            }
-            
-            // Add the calculated area as well
-            content += `<p><strong>Size:</strong> ${hectares} hectares</p>`;
-            
-            popupContainer.current!.innerHTML = content;
+      if (feature && (mapInstance.getLayers().getArray().includes(farmlandVectorLayer) || mapInstance.getLayers().getArray().includes(boundaryVectorLayer))) {
+        const geometry = feature.getGeometry();
+        if (geometry && geometry.getType() === 'MultiPolygon') {
+          const coordinates = (geometry as any).getCoordinates();
+          const area = getArea(geometry);
+          const hectares = (area / 10000).toFixed(2);
+          const properties = feature.getProperties();
+
+          // Remove the geometry property
+          delete properties.geometry;
+
+          // Create content by iterating over the properties
+          let content = '';
+          for (const [key, value] of Object.entries(properties)) {
+            content += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</p>`;
+          }
+
+          // Add the calculated area as well
+          content += `<p><strong>Size:</strong> ${hectares} hectares</p>`;
+
+          if (popupContainer.current) {
+            popupContainer.current.innerHTML = content;
             popup.setPosition(event.coordinate);
-    
-            const extent = boundingExtent(coordinates[0][0]);
-            mapInstance.getView().fit(extent, { duration: 1000, padding: [100, 100, 100, 100] });
+          }
+
+          const extent = boundingExtent(coordinates[0][0]);
+          mapInstance.getView().fit(extent, { duration: 1000, padding: [250, 250, 250, 250] });
         } else {
           popup.setPosition(undefined);
         }
