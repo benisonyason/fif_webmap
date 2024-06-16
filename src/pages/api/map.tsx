@@ -16,6 +16,7 @@ import { boundingExtent } from 'ol/extent';
 import Feature from 'ol/Feature';
 import Geometry from 'ol/geom/Geometry';
 import { FullScreen, defaults as defaultControls, ZoomToExtent } from 'ol/control.js';
+import { FeatureLike } from 'ol/Feature';
 
 const MapComponent: React.FC = () => {
   const [map, setMap] = useState<Map | null>(null);
@@ -58,7 +59,8 @@ const MapComponent: React.FC = () => {
     const boundaryVectorSource = new VectorSource();
     const boundaryVectorLayer = new VectorLayer({
       source: boundaryVectorSource,
-      style: (feature: Feature<Geometry>): Style[] => {
+      style: (feature: FeatureLike): Style[] => {
+        const geometry = feature.getGeometry() as Geometry;
         return [
           new Style({
             fill: new Fill({
@@ -89,7 +91,7 @@ const MapComponent: React.FC = () => {
     const farmlandVectorSource = new VectorSource();
     const farmlandVectorLayer = new VectorLayer({
       source: farmlandVectorSource,
-      style: (feature: Feature<Geometry>) => defaultStyle(feature),
+      style: (feature: FeatureLike) => defaultStyle(feature as Feature<Geometry>),
     });
 
     const popup = new Overlay({
@@ -98,8 +100,6 @@ const MapComponent: React.FC = () => {
       stopEvent: false,
       offset: [0, -15],
     });
-    
-    // const DKIZoomExtent =  [1279289.317183882, 1148789.4635057684, 1290770.3990348745, 1156228.028917502],
 
     const extent = [120870.33011448634, 526035.2936696329, 1754588.7855050964, 1630624.3212196166]; // Define the extent here
 
