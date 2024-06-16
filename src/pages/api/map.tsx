@@ -196,38 +196,35 @@ const MapComponent: React.FC = () => {
 
   useEffect(() => {
     if (!map) return;
-
-    fetch('/api/senatorial_boundaries')
-      .then((response) => response.json())
-      .then((data) => {
-        const format = new GeoJSON();
-        const features = format.readFeatures(data, {
-          featureProjection: 'EPSG:3857',
-        });
-
-        const boundaryVectorLayer = map.getLayers().item(1) as VectorLayer<VectorSource>;
-        const boundarySource = boundaryVectorLayer.getSource() as VectorSource;
-        boundarySource.clear();
-        boundarySource.addFeatures(features);
-      })
-      .catch((error) => console.error('Error fetching boundary data:', error));
-
-    fetch('/api/farmlands')
-      .then((response) => response.json())
-      .then((data) => {
-        const format = new GeoJSON();
-        const features = format.readFeatures(data, {
-          featureProjection: 'EPSG:3857',
-        });
-
-        const farmlandVectorLayer = map.getLayers().item(2) as VectorLayer<VectorSource>;
-        const farmlandSource = farmlandVectorLayer.getSource() as VectorSource;
-        farmlandSource.clear();
-        farmlandSource.addFeatures(features);
-      })
-      .catch((error) => console.error('Error fetching farmland data:', error));
+  
+    const fetchAndAddLayer = (url: string, layerIndex: number) => {
+      fetch(url)
+        .then((response) => response.json())
+        .then((data) => {
+          const format = new GeoJSON();
+          const features = format.readFeatures(data, {
+            featureProjection: 'EPSG:3857',
+          });
+  
+          const layer = map.getLayers().item(layerIndex);
+          if (layer instanceof VectorLayer) {
+            const source = layer.getSource();
+            if (source instanceof VectorSource) {
+              source.clear();
+              source.addFeatures(features);
+            } else {
+              console.error(`Layer at index ${layerIndex} does not have a VectorSource`);
+            }
+          } else {
+            console.error(`Layer at index ${layerIndex} is not a VectorLayer`);
+          }
+        })
+        .catch((error) => console.error(`Error fetching data from ${url}:`, error));
+    };
+  
+    fetchAndAddLayer('/api/senatorial_boundaries', 1);
+    fetchAndAddLayer('/api/farmlands', 2);
   }, [map]);
-
   return (
     <div>
       <div id="map" style={{ width: '100%', height: '85vh' }}></div>
