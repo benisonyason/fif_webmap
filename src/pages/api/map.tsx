@@ -59,19 +59,21 @@ const MapComponent: React.FC = () => {
     const boundaryVectorSource = new VectorSource();
     const boundaryVectorLayer = new VectorLayer({
       source: boundaryVectorSource,
-      style: (feature: FeatureLike): Style[] => {
-        const geometry = feature.getGeometry() as Geometry;
+      style: (feature: FeatureLike) => {
+        const geometry = (feature as Feature<Geometry>).getGeometry();
+        if (!geometry) return []; // Handle cases where geometry is undefined
+  
         return [
           new Style({
             fill: new Fill({
               color: 'rgba(255, 255, 255, 0.5)',
             }),
             stroke: new Stroke({
-              color: '#ff6347',
+              color: 'rgb(129, 131, 133)',
               width: 3.5,
             }),
             text: new Text({
-              text: feature.getProperties().sd_ref,
+              text: (feature.getProperties() as any).sd_ref, // Adjust property access as needed
               font: '12px Calibri,sans-serif',
               fill: new Fill({
                 color: '#000',
@@ -87,7 +89,8 @@ const MapComponent: React.FC = () => {
         ];
       },
     });
-
+    
+    
     const farmlandVectorSource = new VectorSource();
     const farmlandVectorLayer = new VectorLayer({
       source: farmlandVectorSource,
@@ -205,7 +208,7 @@ const MapComponent: React.FC = () => {
           const features = format.readFeatures(data, {
             featureProjection: 'EPSG:3857',
           });
-  
+
           const layer = map.getLayers().item(layerIndex);
           if (layer instanceof VectorLayer) {
             const source = layer.getSource();
